@@ -183,6 +183,7 @@ class DiffusionUnetLowdimPolicy(BaseLowdimPolicy):
     def compute_loss(self, batch):
         # normalize input
         assert 'valid_mask' not in batch
+        #给obs和action归一化到[-1, 1]范围
         nbatch = self.normalizer.normalize(batch)
         obs = nbatch['obs']
         action = nbatch['action']
@@ -195,6 +196,7 @@ class DiffusionUnetLowdimPolicy(BaseLowdimPolicy):
             # zero out observations after n_obs_steps
             local_cond = obs
             local_cond[:,self.n_obs_steps:,:] = 0
+        #obs作为全局条件输入，重复拼接到每个时间步
         elif self.obs_as_global_cond:
             global_cond = obs[:,:self.n_obs_steps,:].reshape(
                 obs.shape[0], -1)
@@ -212,18 +214,23 @@ class DiffusionUnetLowdimPolicy(BaseLowdimPolicy):
         if self.pred_action_steps_only:
             condition_mask = torch.zeros_like(trajectory, dtype=torch.bool)
         else:
+            #按照trajectory.shape生成一个mask，表示哪些位置是条件输入（即obs），哪些位置是需要预测的（即action）
+            #按照默认配置，当前为全Fasle
             condition_mask = self.mask_generator(trajectory.shape)
 
         # Sample noise that we'll add to the images
+        #标准正态分布采样噪声，形状与trajectory相同
         noise = torch.randn(trajectory.shape, device=trajectory.device)
-        bsz = trajectory.shape[0]
+        bsz = trajectory.shape[0]   #bsz是batch size
         # Sample a random timestep for each image
+        # 为每个样本随机采样一个时间步，范围在0到num_train_timesteps之间
         timesteps = torch.randint(
             0, self.noise_scheduler.config.num_train_timesteps, 
             (bsz,), device=trajectory.device
         ).long()
         # Add noise to the clean images according to the noise magnitude at each timestep
         # (this is the forward diffusion process)
+        #前向传播过程，根据每个时间步的噪声大小将噪声添加到干净的图像中
         noisy_trajectory = self.noise_scheduler.add_noise(
             trajectory, noise, timesteps)
         
@@ -231,12 +238,14 @@ class DiffusionUnetLowdimPolicy(BaseLowdimPolicy):
         loss_mask = ~condition_mask
 
         # apply conditioning
+        # 将标记为条件输入的位置从加噪后恢复为原始值
         noisy_trajectory[condition_mask] = trajectory[condition_mask]
         
         # Predict the noise residual
         pred = self.model(noisy_trajectory, timesteps, 
             local_cond=local_cond, global_cond=global_cond)
 
+        # 训练目标：根据pred_type选择是预测噪声还是直接预测原始轨迹
         pred_type = self.noise_scheduler.config.prediction_type 
         if pred_type == 'epsilon':
             target = noise

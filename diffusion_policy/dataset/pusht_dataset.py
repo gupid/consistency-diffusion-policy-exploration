@@ -26,8 +26,9 @@ class PushTLowdimDataset(BaseLowdimDataset):
         self.replay_buffer = ReplayBuffer.copy_from_path(
             zarr_path, keys=[obs_key, state_key, action_key])
 
+        #按照episode划分训练集和验证集
         val_mask = get_val_mask(
-            n_episodes=self.replay_buffer.n_episodes, 
+            n_episodes=self.replay_buffer.n_episodes,   #传入的是episode的数量
             val_ratio=val_ratio,
             seed=seed)
         train_mask = ~val_mask
@@ -36,6 +37,7 @@ class PushTLowdimDataset(BaseLowdimDataset):
             max_n=max_train_episodes, 
             seed=seed)
 
+        # 创建采样器，负责根据索引采样出一个长度为horizon的序列
         self.sampler = SequenceSampler(
             replay_buffer=self.replay_buffer, 
             sequence_length=horizon,
