@@ -45,7 +45,7 @@ policy:
   sigma_data: 0.5
   rho: 7.0
   loss_type: l2
-  reconstruction_loss_weight: 0.25
+  reconstruction_loss_weight: 0.0
   scale_consistency_loss: True
   clip_sample: True
   obs_as_global_cond: ${obs_as_global_cond}
@@ -85,6 +85,9 @@ training:
   seed: 42
   debug: False
   resume: True
+  num_train_scales_schedule:
+    enabled: True
+    initial_scales: 2
   lr_scheduler: cosine
   lr_warmup_steps: 500
   num_epochs: 5000

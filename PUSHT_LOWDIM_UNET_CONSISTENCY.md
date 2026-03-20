@@ -34,7 +34,7 @@
 
 和 diffusion 版本最大的区别不在数据，而在 loss：
 
-1. 先用 Karras noise schedule 生成一串 `sigma`
+1. 先按当前训练步数动态计算 `num_train_scales`，再用 Karras noise schedule 生成这一轮的 `sigma`
 2. 对每个样本随机采样相邻两个噪声尺度 `sigma_1 < sigma_2`
 3. 用同一个高斯噪声 `z` 分别构造：
    - `noisy_1 = trajectory + z * sigma_1`
@@ -127,6 +127,8 @@ def main(cfg):
 - `val_consistency_loss`
 - `val_reconstruction_loss`
 
+其中 `train_num_scales` 不再是固定值；当前实现参考 consistency RL 里的 `timesteps_schedule`，会在训练过程中从较小尺度数逐步增长到配置里的最终尺度数。
+
 ### 3.3 配置
 
 文件：`diffusion_policy/config/train_consistency_unet_lowdim_workspace.yaml`
@@ -147,11 +149,18 @@ policy:
   clip_sample: True
   obs_as_global_cond: True
   oa_step_convention: True
+
+training:
+  num_train_scales_schedule:
+    enabled: True
+    initial_scales: 2
 ```
 
 这些参数可以直接理解成：
 
-- `num_train_scales`: 训练时把噪声范围切成多少个尺度
+- `num_train_scales`: 训练后期使用的最终尺度数上限
+- `training.num_train_scales_schedule.initial_scales`: 训练初期使用的起始尺度数
+- `training.num_train_scales_schedule.enabled`: 是否启用动态尺度调度
 - `sigma_min/sigma_max/rho`: Karras 噪声调度参数
 - `sigma_data`: consistency 参数化里控制 skip/out 权重
 - `num_inference_steps`: 推理实际用几个 sigma 点

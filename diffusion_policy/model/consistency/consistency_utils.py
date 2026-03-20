@@ -5,6 +5,25 @@ import torch
 import torch.nn.functional as F
 
 
+def timesteps_schedule(
+        current_training_step: int,
+        total_training_steps: int,
+        initial_timesteps: int = 2,
+        final_timesteps: int = 150) -> int:
+    if total_training_steps <= 0:
+        raise ValueError("total_training_steps must be positive")
+    if initial_timesteps < 2:
+        raise ValueError("initial_timesteps must be at least 2")
+    if final_timesteps < initial_timesteps:
+        raise ValueError("final_timesteps must be greater than or equal to initial_timesteps")
+
+    current_training_step = min(max(current_training_step, 0), total_training_steps)
+    num_timesteps = final_timesteps ** 2 - initial_timesteps ** 2
+    num_timesteps = current_training_step * num_timesteps / total_training_steps
+    num_timesteps = math.ceil(math.sqrt(num_timesteps + initial_timesteps ** 2) - 1)
+    return num_timesteps + 1
+
+
 def get_karras_sigmas(
         num_scales: int,
         sigma_min: float,

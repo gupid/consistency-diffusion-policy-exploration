@@ -25,6 +25,7 @@ from diffusion_policy.common.json_logger import JsonLogger
 from diffusion_policy.common.pytorch_util import dict_apply, optimizer_to
 from diffusion_policy.dataset.base_dataset import BaseLowdimDataset
 from diffusion_policy.env_runner.base_lowdim_runner import BaseLowdimRunner
+from diffusion_policy.model.consistency.consistency_utils import timesteps_schedule
 from diffusion_policy.model.diffusion.ema_model import EMAModel
 from diffusion_policy.model.common.lr_scheduler import get_scheduler
 from diffusion_policy.policy.consistency_unet_lowdim_policy import ConsistencyUnetLowdimPolicy
@@ -120,6 +121,16 @@ class TrainConsistencyUnetLowdimWorkspace(BaseWorkspace):
 
         train_sampling_batch = None
 
+        def get_current_num_train_scales(step: int) -> int:
+            schedule_cfg = cfg.training.num_train_scales_schedule
+            if not schedule_cfg.enabled:
+                return int(cfg.policy.num_train_scales)
+            return timesteps_schedule(
+                current_training_step=step,
+                total_training_steps=total_training_steps,
+                initial_timesteps=int(schedule_cfg.initial_scales),
+                final_timesteps=int(cfg.policy.num_train_scales))
+
         if cfg.training.debug:
             cfg.training.num_epochs = 2
             cfg.training.max_train_steps = 3
@@ -145,10 +156,11 @@ class TrainConsistencyUnetLowdimWorkspace(BaseWorkspace):
                         if train_sampling_batch is None:
                             train_sampling_batch = batch
 
+                        current_num_scales = get_current_num_train_scales(self.global_step)
                         raw_loss, loss_components = self.model.compute_loss(
                             batch,
                             ema_model=self.ema_model if cfg.training.use_ema else None,
-                            num_scales=cfg.policy.num_train_scales)
+                            num_scales=current_num_scales)
                         loss = raw_loss / cfg.training.gradient_accumulate_every
                         loss.backward()
 
@@ -210,10 +222,11 @@ class TrainConsistencyUnetLowdimWorkspace(BaseWorkspace):
                                 mininterval=cfg.training.tqdm_interval_sec) as tepoch:
                             for batch_idx, batch in enumerate(tepoch):
                                 batch = dict_apply(batch, lambda x: x.to(device, non_blocking=True))
+                                current_num_scales = get_current_num_train_scales(self.global_step)
                                 loss, loss_components = self.model.compute_loss(
                                     batch,
                                     ema_model=self.ema_model if cfg.training.use_ema else None,
-                                    num_scales=cfg.policy.num_train_scales)
+                                    num_scales=current_num_scales)
                                 val_losses.append(loss)
                                 val_consistency_losses.append(loss_components['consistency_loss'])
                                 val_reconstruction_losses.append(loss_components['reconstruction_loss'])
