@@ -1,0 +1,14 @@
+{
+  "baseline": {
+    "inference_steps": 100,
+    "best_epoch": 50,
+    "best_test_mean_score": 0.8676527302751477
+  },
+  "consistency": {
+    "inference_steps": 4,
+    "best_epoch": 100,
+    "best_test_mean_score": 0.8671982694735959
+  },
+  "step_reduction_ratio": 25.0,
+  "score_retained_percent": 99.94762180931447
+}

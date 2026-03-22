@@ -1,22 +1,44 @@
 # Diffusion Policy Consistency Exploration
 
-这是一个基于原始 Diffusion Policy 代码库进行学习、整理与实验改造的工程，是一个研究型 / 学习型仓库，属于 work in progress。
+这是一个基于原始 Diffusion Policy 代码库进行学习、整理与实验改造的工程，是一个研究型 / 学习型仓库。
 
 - 代码基础来自原始 Diffusion Policy 项目
 - 仓库目标偏向方法理解与工程探索，而不是发布一个已经完善封装的通用库
-
-## 保留的原始资料
-
-以下链接来自原始 Diffusion Policy 项目，便于对照阅读：
-
-- 原项目页面: <https://diffusion-policy.cs.columbia.edu/>
-- 原论文页面: <https://diffusion-policy.cs.columbia.edu/#paper>
-- 原始数据与实验日志入口: <https://diffusion-policy.cs.columbia.edu/data/>
-- 原始 state Colab: <https://colab.research.google.com/drive/1gxdkgRVfM55zihY9TFLja97cSVZOZq2B?usp=sharing>
-- 原始 vision Colab: <https://colab.research.google.com/drive/18GIHeOQ5DyjMN8iIRZL2EKZ0745NLIpg?usp=sharing>
 - 原始开源仓库: <https://github.com/real-stanford/diffusion_policy>
+- Consistency model的参考仓库：<https://github.com/quantumiracle/Consistency_Model_For_Reinforcement_Learning>
 
-## 说明
+## 训练成果
 
-- 如果你想看完整方法、实验设定和官方说明，请优先参考上面的原始仓库和论文链接。
-- 如果你进入这个仓库，应该把它视为一个“围绕 diffusion policy 与 consistency 改造的学习/实验工程”。
+在 Push-T lowdim 任务上，目前这组实验的核心结论是：
+
+- Diffusion Policy UNet baseline: `100` inference steps, best `test_mean_score = 0.8677`
+- Consistency Policy: `4` inference steps, best `test_mean_score = 0.8672`
+- 在分数几乎保持不变的情况下，将推理步数压缩了 `25x`
+
+Left: Diffusion Policy UNet baseline (100 inference steps)  
+Right: Consistency Policy (4 inference steps)
+
+![PushT baseline vs consistency](assets/readme/pusht_seed100000_side_by_side.gif)
+
+### 结果图表
+
+Inference steps 与最终性能的关系：
+
+![PushT score vs steps](assets/readme/pusht_score_vs_steps.png)
+
+训练过程中 test score 的变化：
+
+![PushT score vs epoch](assets/readme/pusht_score_vs_epoch.png)
+
+50 个测试 seed 的 reward 排序分布：
+
+![PushT reward sorted](assets/readme/pusht_reward_sorted.png)
+
+高 reward episode 数量对比：
+
+![PushT success thresholds](assets/readme/pusht_success_thresholds.png)
+
+## Training Tip
+- 在 Push-T lowdim 上，noise-scale curriculum 对 consistency training 的稳定性非常重要。早期实验中，我直接使用完整的 scale 范围进行训练，优化效果较差，最终性能也明显偏低。后续引入课程学习后，将训练 scale 从 `2` 逐步增加到 `150`，训练过程明显更稳定，最终模型达到了 `test_mean_score = 0.8672`。
+
+- 我还尝试加入了类似 BC 的 reconstruction term 来增强训练稳定性。但在当前这组实验中，这一项没有带来明确的性能提升。就目前仓库中的结果来看，Push-T lowdim 上的最佳 consistency 模型仍然来自 `reconstruction_loss_weight = 0.0` 的设置。若要对这一点下更强结论，还需要更严格的控制变量实验。
