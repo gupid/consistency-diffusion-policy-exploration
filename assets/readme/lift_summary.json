@@ -1,0 +1,47 @@
+{
+  "baseline": {
+    "name": "Diffusion Policy UNet baseline",
+    "inference_steps": 100,
+    "best_epoch": 100,
+    "best_test_mean_score": 0.96
+  },
+  "runs": [
+    {
+      "name": "Diffusion Policy UNet baseline",
+      "inference_steps": 100,
+      "reconstruction_loss_weight": null,
+      "best_epoch": 100,
+      "best_test_mean_score": 0.96
+    },
+    {
+      "name": "Consistency Policy",
+      "inference_steps": 4,
+      "reconstruction_loss_weight": 0.0,
+      "best_epoch": 100,
+      "best_test_mean_score": 0.84
+    },
+    {
+      "name": "Consistency Policy",
+      "inference_steps": 4,
+      "reconstruction_loss_weight": 0.1,
+      "best_epoch": 100,
+      "best_test_mean_score": 0.82
+    },
+    {
+      "name": "Consistency Policy",
+      "inference_steps": 8,
+      "reconstruction_loss_weight": 0.0,
+      "best_epoch": 100,
+      "best_test_mean_score": 0.92
+    }
+  ],
+  "best_consistency": {
+    "name": "Consistency Policy",
+    "inference_steps": 8,
+    "reconstruction_loss_weight": 0.0,
+    "best_epoch": 100,
+    "best_test_mean_score": 0.92
+  },
+  "step_reduction_ratio_vs_baseline": 12.5,
+  "score_retained_percent_vs_baseline": 95.83333333333334
+}

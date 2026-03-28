@@ -38,7 +38,7 @@ policy:
   action_dim: ${action_dim}
   n_action_steps: ${eval:'${n_action_steps}+${n_latency_steps}'}
   n_obs_steps: ${n_obs_steps}
-  num_inference_steps: 4
+  num_inference_steps: 8
   num_train_scales: 150
   sigma_min: 0.002
   sigma_max: 80.0
